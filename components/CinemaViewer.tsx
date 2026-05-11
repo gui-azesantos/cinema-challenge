@@ -11,6 +11,15 @@ interface Props {
 
 type Tab = "filmes" | "semanas" | "arco";
 
+function getWikipediaUrl(name: string) {
+  return `https://en.wikipedia.org/wiki/${encodeURIComponent(name)}`;
+}
+
+function getLetterboxdSearchUrl(title: string, year: number) {
+  const query = encodeURIComponent(`${title} ${year}`);
+  return `https://letterboxd.com/search/films/${query}/`;
+}
+
 export default function CinemaViewer({ data, ano }: Props) {
   const [active, setActive] = useState(0);
   const [tab, setTab] = useState<Tab>("filmes");
@@ -69,7 +78,11 @@ export default function CinemaViewer({ data, ano }: Props) {
               {label}
             </span>
             <span
-              style={{ fontSize: 13, color: "#282828", fontFamily: "monospace" }}
+              style={{
+                fontSize: 13,
+                color: "#282828",
+                fontFamily: "monospace",
+              }}
             >
               {dateRange}
             </span>
@@ -129,7 +142,7 @@ export default function CinemaViewer({ data, ano }: Props) {
       </div>
 
       {/* ── Body ────────────────────────────────────────── */}
-          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "28px 34px" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "28px 34px" }}>
         {/* Movement / Director card */}
         <div
           style={{
@@ -243,8 +256,11 @@ export default function CinemaViewer({ data, ano }: Props) {
             }}
           >
             {m.directors.map((d, i) => (
-              <span
+              <a
                 key={i}
+                href={getWikipediaUrl(d)}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
                   padding: "4px 10px",
                   background: "#ffffff05",
@@ -253,10 +269,17 @@ export default function CinemaViewer({ data, ano }: Props) {
                   fontSize: 14,
                   color: colors.accent,
                   fontFamily: "monospace",
+                  textDecoration: "none",
                 }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.color = colors.accent)
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.color = colors.accent)
+                }
               >
                 {d}
-              </span>
+              </a>
             ))}
           </div>
 
@@ -376,7 +399,17 @@ export default function CinemaViewer({ data, ano }: Props) {
                       color: f.type === "núcleo" ? "#e0d8c8" : "#706860",
                     }}
                   >
-                    {f.title}
+                    <a
+                      href={getLetterboxdSearchUrl(f.title, f.year)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: f.type === "núcleo" ? "#e0d8c8" : "#706860",
+                        textDecoration: "none",
+                      }}
+                    >
+                      {f.title}
+                    </a>
                   </div>
                   <div
                     style={{

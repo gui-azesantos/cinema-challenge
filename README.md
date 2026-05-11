@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+﻿# Cinema Challenge
 
-## Getting Started
+App em Next.js para organizar movimentos, diretores e filmes essenciais do cinema em uma agenda visual.
 
-First, run the development server:
+## Sobre
+
+Este projeto é uma vitrine de estudo que apresenta:
+
+- movimentos históricos do cinema
+- diretores centrais de cada fase
+- filmes recomendados por mês
+- referências com links para Wikipedia e vídeos explicativos
+
+## Como rodar
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Em seguida, abra `http://localhost:3000` no navegador.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Estrutura do projeto
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `app/page.tsx` — página principal e alternância entre ano 1 e ano 2
+- `components/CinemaViewer.tsx` — componente que exibe os movimentos, diretores e filmes
+- `data/ano1.ts` e `data/ano2.ts` — dados de movimentos, diretores, filmes e referencias
+- `app/globals.css` — estilos globais do site
 
-## Learn More
+## Limpeza pública
 
-To learn more about Next.js, take a look at the following resources:
+Removido o Tailwind CSS e a configuração de PostCSS não utilizada, já que o projeto usa estilos inline e CSS global simples.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Observações
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+O projeto é pensado como uma demonstração de conteúdo cinematográfico e navegação, não como uma aplicação complexa de produção.
