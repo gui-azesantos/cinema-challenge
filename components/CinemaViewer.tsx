@@ -10,8 +10,11 @@ interface Props {
 }
 
 type Tab = "filmes" | "semanas" | "arco";
+type FilmFilter = "all" | "nao-vistos";
 
 const activeStorageKey = (ano: 1 | 2) => `cinema-lastActive-ano${ano}`;
+const tabStorageKey = "cinema-lastTab";
+const filterStorageKey = "cinema-filmFilter";
 const watchedFilmsStorageKey = "cinema-watchedFilms";
 
 const getFilmKey = (film: Film, monthIndex: number, filmIndex: number) =>
@@ -27,41 +30,61 @@ function getLetterboxdSearchUrl(title: string, year: number) {
 }
 
 export default function CinemaViewer({ data, ano }: Props) {
-  const [active, setActive] = useState<number | null>(null);
-  const [tab, setTab] = useState<Tab>("filmes");
-  const [watchedFilms, setWatchedFilms] = useState<Record<string, boolean>>({});
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
+  const [active, setActive] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
     const savedActive = window.localStorage.getItem(activeStorageKey(ano));
     if (savedActive !== null) {
       const parsed = Number(savedActive);
       if (!Number.isNaN(parsed) && parsed >= 0 && parsed < data.length) {
-        setActive(parsed);
-      } else {
-        setActive(0);
+        return parsed;
       }
-    } else {
-      setActive(0);
     }
-
-    const savedFilms = window.localStorage.getItem(watchedFilmsStorageKey);
-    if (savedFilms) {
+    return 0;
+  });
+  const [tab, setTab] = useState<Tab>(() => {
+    if (typeof window === "undefined") return "filmes";
+    const savedTab = window.localStorage.getItem(tabStorageKey);
+    if (
+      savedTab === "filmes" ||
+      savedTab === "semanas" ||
+      savedTab === "arco"
+    ) {
+      return savedTab;
+    }
+    return "filmes";
+  });
+  const [filmFilter, setFilmFilter] = useState<FilmFilter>(() => {
+    if (typeof window === "undefined") return "all";
+    const savedFilter = window.localStorage.getItem(filterStorageKey);
+    if (savedFilter === "all" || savedFilter === "nao-vistos") {
+      return savedFilter;
+    }
+    return "all";
+  });
+  const [watchedFilms, setWatchedFilms] = useState<Record<string, boolean>>(
+    () => {
+      if (typeof window === "undefined") return {};
+      const savedFilms = window.localStorage.getItem(watchedFilmsStorageKey);
+      if (!savedFilms) return {};
       try {
-        setWatchedFilms(JSON.parse(savedFilms));
+        return JSON.parse(savedFilms);
       } catch {
-        setWatchedFilms({});
+        return {};
       }
-    }
-
-    setIsReady(true);
-  }, [ano, data.length]);
+    },
+  );
 
   useEffect(() => {
-    if (active !== null) {
-      window.localStorage.setItem(activeStorageKey(ano), String(active));
-    }
+    window.localStorage.setItem(activeStorageKey(ano), String(active));
   }, [active, ano]);
+
+  useEffect(() => {
+    window.localStorage.setItem(tabStorageKey, tab);
+  }, [tab]);
+
+  useEffect(() => {
+    window.localStorage.setItem(filterStorageKey, filmFilter);
+  }, [filmFilter]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -70,30 +93,81 @@ export default function CinemaViewer({ data, ano }: Props) {
     );
   }, [watchedFilms]);
 
-  if (!isReady || active === null) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#080808",
-          display: "grid",
-          placeItems: "center",
-          color: "#9a9a9a",
-          fontFamily: "monospace",
-          fontSize: 13,
-        }}
-      >
-        Restaurando seu ponto de parada...
-      </div>
-    );
-  }
-
   const m = data[active];
   const colors = seasonColors[m.season as Season];
   const totalFilmes = data.reduce((a, d) => a + d.films.length, 0);
   const accumulated = data
     .slice(0, active + 1)
     .reduce((a, d) => a + d.films.length, 0);
+
+  const monthCoreCount = m.films.filter(
+    (film) => film.type === "núcleo",
+  ).length;
+  const monthCoreWatched = m.films.reduce((sum, film, index) => {
+    return (
+      sum +
+      (film.type === "núcleo" && watchedFilms[getFilmKey(film, active, index)]
+        ? 1
+        : 0)
+    );
+  }, 0);
+  const monthExtraStars = m.films.reduce((sum, film, index) => {
+    return (
+      sum +
+      (film.type === "complementar" &&
+      watchedFilms[getFilmKey(film, active, index)]
+        ? 1
+        : 0)
+    );
+  }, 0);
+
+  const totalWatched = data.reduce((sum, month, monthIndex) => {
+    return (
+      sum +
+      month.films.reduce((sub, film, index) => {
+        return (
+          sub + (watchedFilms[getFilmKey(film, monthIndex, index)] ? 1 : 0)
+        );
+      }, 0)
+    );
+  }, 0);
+
+  const yearCoreCount = data.reduce(
+    (sum, month) =>
+      sum + month.films.filter((film) => film.type === "núcleo").length,
+    0,
+  );
+  const yearCoreWatched = data.reduce((sum, month, monthIndex) => {
+    return (
+      sum +
+      month.films.reduce((sub, film, index) => {
+        return (
+          sub +
+          (film.type === "núcleo" &&
+          watchedFilms[getFilmKey(film, monthIndex, index)]
+            ? 1
+            : 0)
+        );
+      }, 0)
+    );
+  }, 0);
+  const yearExtraStars = totalWatched - yearCoreWatched;
+  const yearProgress = Math.round((yearCoreWatched / yearCoreCount) * 100);
+  const monthProgress = Math.min(
+    100,
+    Math.round((monthCoreWatched / monthCoreCount) * 100),
+  );
+
+  const notWatched = m.films
+    .map((film, index) => ({ film, index }))
+    .filter(
+      ({ film, index }) => !watchedFilms[getFilmKey(film, active, index)],
+    );
+  const watchedList = m.films
+    .map((film, index) => ({ film, index }))
+    .filter(({ film, index }) => watchedFilms[getFilmKey(film, active, index)]);
+  const visibleFilms =
+    filmFilter === "all" ? [...notWatched, ...watchedList] : notWatched;
 
   const handleMonth = (i: number) => {
     setActive(i);
@@ -105,6 +179,104 @@ export default function CinemaViewer({ data, ano }: Props) {
       ...prev,
       [filmKey]: !prev[filmKey],
     }));
+  };
+
+  const renderFilmCard = (film: Film, index: number) => {
+    const filmKey = getFilmKey(film, active, index);
+    const isWatched = !!watchedFilms[filmKey];
+    return (
+      <div
+        key={filmKey}
+        style={{
+          padding: "10px 13px",
+          background: isWatched
+            ? "#0c0c0c"
+            : film.type === "núcleo"
+              ? "#101010"
+              : "#0a0a0a",
+          border: `1px solid ${film.type === "núcleo" ? colors.soft : "#141414"}`,
+          borderLeft: `3px solid ${film.type === "núcleo" ? colors.accent : "#252525"}`,
+          borderRadius: 2,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          opacity: isWatched ? 0.95 : 1,
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 16,
+              marginBottom: 3,
+              color: film.type === "núcleo" ? "#e0d8c8" : "#706860",
+            }}
+          >
+            <a
+              href={getLetterboxdSearchUrl(film.title, film.year)}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: film.type === "núcleo" ? "#e0d8c8" : "#706860",
+                textDecoration: "none",
+              }}
+            >
+              {film.title}
+            </a>
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              color: "#404040",
+              fontFamily: "monospace",
+            }}
+          >
+            {film.director} · {film.year}
+          </div>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: 8,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => toggleWatched(filmKey)}
+            aria-label={
+              isWatched ? "Desmarcar como visto" : "Marcar como visto"
+            }
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 4,
+              border: `1px solid ${isWatched ? colors.accent : "#333"}`,
+              background: isWatched ? colors.bg : "transparent",
+              color: isWatched ? colors.accent : "#777",
+              fontSize: 14,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {isWatched ? "✓" : "○"}
+          </button>
+          <span
+            style={{
+              fontSize: 10,
+              color: isWatched ? colors.accent : "#555",
+              fontFamily: "monospace",
+              textTransform: "uppercase",
+              letterSpacing: 1.2,
+            }}
+          >
+            {isWatched ? "VISTO" : film.type === "núcleo" ? "NÚCLEO" : "EXTRA"}
+          </span>
+        </div>
+      </div>
+    );
   };
 
   const isAno1 = ano === 1;
@@ -163,12 +335,47 @@ export default function CinemaViewer({ data, ano }: Props) {
               fontSize: 30,
               fontWeight: "normal",
               color: "#ede5d5",
-              margin: "0 0 18px",
+              margin: "0 0 8px",
               letterSpacing: -0.5,
             }}
           >
             {subtitle}
           </h1>
+          <div
+            style={{
+              fontSize: 12,
+              color: "#7d7d7d",
+              fontFamily: "monospace",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 10,
+              marginBottom: 8,
+            }}
+          >
+            <span>
+              Desafio do ano: {yearCoreWatched}/{yearCoreCount} núcleos (
+              {yearProgress}%)
+            </span>
+            <span>•</span>
+            <span>
+              Estrelas extras: {yearExtraStars} {yearExtraStars > 0 ? "★" : ""}
+            </span>
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              color: "#7d7d7d",
+              fontFamily: "monospace",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 10,
+              marginBottom: 18,
+            }}
+          >
+            <span>Último ponto de parada: {monthLabel(m.month, m.year)}</span>
+            <span>•</span>
+            <span>Aba: {tab.toUpperCase()}</span>
+          </div>
 
           {/* Month tabs */}
           <div
@@ -402,6 +609,49 @@ export default function CinemaViewer({ data, ano }: Props) {
               </a>
             ))}
           </div>
+
+          <div style={{ marginTop: 16 }}>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 12,
+                alignItems: "center",
+                color: "#888",
+                fontFamily: "monospace",
+                fontSize: 11,
+              }}
+            >
+              <span>
+                Desafio do mês: {monthCoreWatched}/{monthCoreCount} núcleos (
+                {monthProgress}%)
+              </span>
+              <span>•</span>
+              <span>
+                Extras: {monthExtraStars} estrelinha
+                {monthExtraStars === 1 ? "" : "s"}
+              </span>
+            </div>
+            <div
+              style={{
+                height: 6,
+                marginTop: 10,
+                background: "#111",
+                borderRadius: 999,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  width: `${Math.max(4, monthProgress)}%`,
+                  minWidth: monthProgress > 0 ? `${monthProgress}%` : "4%",
+                  height: "100%",
+                  background: colors.accent,
+                  transition: "width 0.2s ease",
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* ── Tabs ──────────────────────────────────────── */}
@@ -439,109 +689,133 @@ export default function CinemaViewer({ data, ano }: Props) {
           ))}
         </div>
 
-        {/* ── Filmes ─────────────────────────────────────── */}
-        {tab === "filmes" && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: 7,
-            }}
-          >
-            {m.films.map((f, i) => {
-              const filmKey = getFilmKey(f, active, i);
-              const isWatched = !!watchedFilms[filmKey];
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 12,
+            marginBottom: 18,
+          }}
+        >
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {(["all", "nao-vistos"] as FilmFilter[]).map((value) => {
+              const labelText = value === "all" ? "Todos" : "Não vistos";
+              const isActive = filmFilter === value;
               return (
-                <div
-                  key={i}
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setFilmFilter(value)}
                   style={{
-                    padding: "10px 13px",
-                    background: f.type === "núcleo" ? "#101010" : "#0a0a0a",
-                    border: `1px solid ${f.type === "núcleo" ? colors.soft : "#141414"}`,
-                    borderLeft: `3px solid ${f.type === "núcleo" ? colors.accent : "#252525"}`,
-                    borderRadius: 2,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
+                    padding: "6px 14px",
+                    borderRadius: 999,
+                    border: isActive
+                      ? `1px solid ${colors.accent}`
+                      : "1px solid #2a2a2a",
+                    background: isActive ? colors.tag : "#111",
+                    color: isActive ? colors.accent : "#999",
+                    fontFamily: "monospace",
+                    fontSize: 11,
+                    textTransform: "uppercase",
+                    cursor: "pointer",
                   }}
                 >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 16,
-                        marginBottom: 3,
-                        color: f.type === "núcleo" ? "#e0d8c8" : "#706860",
-                      }}
-                    >
-                      <a
-                        href={getLetterboxdSearchUrl(f.title, f.year)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          color: f.type === "núcleo" ? "#e0d8c8" : "#706860",
-                          textDecoration: "none",
-                        }}
-                      >
-                        {f.title}
-                      </a>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "#404040",
-                        fontFamily: "monospace",
-                      }}
-                    >
-                      {f.director} · {f.year}
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      gap: 8,
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => toggleWatched(filmKey)}
-                      aria-label={
-                        isWatched ? "Desmarcar como visto" : "Marcar como visto"
-                      }
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 4,
-                        border: `1px solid ${
-                          isWatched ? colors.accent : "#333"
-                        }`,
-                        background: isWatched ? colors.bg : "transparent",
-                        color: isWatched ? colors.accent : "#777",
-                        fontSize: 14,
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {isWatched ? "✓" : "○"}
-                    </button>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: isWatched ? colors.accent : "#555",
-                        fontFamily: "monospace",
-                        textTransform: "uppercase",
-                        letterSpacing: 1.2,
-                      }}
-                    >
-                      {isWatched ? "VISTO" : f.type}
-                    </span>
-                  </div>
-                </div>
+                  {labelText}
+                </button>
               );
             })}
+          </div>
+          <div
+            style={{
+              color: "#7d7d7d",
+              fontFamily: "monospace",
+              fontSize: 12,
+            }}
+          >
+            {monthCoreWatched}/{monthCoreCount} núcleos concluídos ·{" "}
+            {yearCoreWatched}/{yearCoreCount} no ano · Estrelas extras:{" "}
+            {yearExtraStars}
+          </div>
+        </div>
+
+        {/* ── Filmes ─────────────────────────────────────── */}
+        {tab === "filmes" && (
+          <div style={{ display: "grid", gap: 16 }}>
+            {filmFilter === "all" && notWatched.length > 0 && (
+              <div
+                style={{
+                  fontFamily: "monospace",
+                  color: "#999",
+                  fontSize: 11,
+                  textTransform: "uppercase",
+                  letterSpacing: 1.5,
+                }}
+              >
+                Não vistos — {notWatched.length}
+              </div>
+            )}
+
+            {(filmFilter === "all" || filmFilter === "nao-vistos") &&
+              notWatched.length > 0 && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(280px, 1fr))",
+                    gap: 7,
+                  }}
+                >
+                  {notWatched.map(({ film, index }) =>
+                    renderFilmCard(film, index),
+                  )}
+                </div>
+              )}
+
+            {filmFilter === "all" && watchedList.length > 0 && (
+              <>
+                <div
+                  style={{
+                    fontFamily: "monospace",
+                    color: "#999",
+                    fontSize: 11,
+                    textTransform: "uppercase",
+                    letterSpacing: 1.5,
+                  }}
+                >
+                  Vistos — {watchedList.length}
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(280px, 1fr))",
+                    gap: 7,
+                  }}
+                >
+                  {watchedList.map(({ film, index }) =>
+                    renderFilmCard(film, index),
+                  )}
+                </div>
+              </>
+            )}
+
+            {visibleFilms.length === 0 && (
+              <div
+                style={{
+                  padding: "18px 16px",
+                  background: "#101010",
+                  border: "1px solid #181818",
+                  borderRadius: 3,
+                  color: "#8d8d8d",
+                  fontFamily: "monospace",
+                  fontSize: 13,
+                }}
+              >
+                Nenhum filme corresponde ao filtro selecionado.
+              </div>
+            )}
           </div>
         )}
 
