@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Month } from "@/data/ano1";
+import { useEffect, useState } from "react";
+import { Film, Month } from "@/data/ano1";
 import { seasonColors, seasonLabels, monthLabel, Season } from "@/lib/seasons";
 
 interface Props {
@@ -10,6 +10,12 @@ interface Props {
 }
 
 type Tab = "filmes" | "semanas" | "arco";
+
+const activeStorageKey = (ano: 1 | 2) => `cinema-lastActive-ano${ano}`;
+const watchedFilmsStorageKey = "cinema-watchedFilms";
+
+const getFilmKey = (film: Film, monthIndex: number, filmIndex: number) =>
+  `${film.title}::${film.year}::${monthIndex}::${filmIndex}`;
 
 function getWikipediaUrl(name: string) {
   return `https://en.wikipedia.org/wiki/${encodeURIComponent(name)}`;
@@ -21,8 +27,66 @@ function getLetterboxdSearchUrl(title: string, year: number) {
 }
 
 export default function CinemaViewer({ data, ano }: Props) {
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState<number | null>(null);
   const [tab, setTab] = useState<Tab>("filmes");
+  const [watchedFilms, setWatchedFilms] = useState<Record<string, boolean>>({});
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const savedActive = window.localStorage.getItem(activeStorageKey(ano));
+    if (savedActive !== null) {
+      const parsed = Number(savedActive);
+      if (!Number.isNaN(parsed) && parsed >= 0 && parsed < data.length) {
+        setActive(parsed);
+      } else {
+        setActive(0);
+      }
+    } else {
+      setActive(0);
+    }
+
+    const savedFilms = window.localStorage.getItem(watchedFilmsStorageKey);
+    if (savedFilms) {
+      try {
+        setWatchedFilms(JSON.parse(savedFilms));
+      } catch {
+        setWatchedFilms({});
+      }
+    }
+
+    setIsReady(true);
+  }, [ano, data.length]);
+
+  useEffect(() => {
+    if (active !== null) {
+      window.localStorage.setItem(activeStorageKey(ano), String(active));
+    }
+  }, [active, ano]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      watchedFilmsStorageKey,
+      JSON.stringify(watchedFilms),
+    );
+  }, [watchedFilms]);
+
+  if (!isReady || active === null) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#080808",
+          display: "grid",
+          placeItems: "center",
+          color: "#9a9a9a",
+          fontFamily: "monospace",
+          fontSize: 13,
+        }}
+      >
+        Restaurando seu ponto de parada...
+      </div>
+    );
+  }
 
   const m = data[active];
   const colors = seasonColors[m.season as Season];
@@ -34,6 +98,13 @@ export default function CinemaViewer({ data, ano }: Props) {
   const handleMonth = (i: number) => {
     setActive(i);
     setTab("filmes");
+  };
+
+  const toggleWatched = (filmKey: string) => {
+    setWatchedFilms((prev) => ({
+      ...prev,
+      [filmKey]: !prev[filmKey],
+    }));
   };
 
   const isAno1 = ano === 1;
@@ -377,66 +448,100 @@ export default function CinemaViewer({ data, ano }: Props) {
               gap: 7,
             }}
           >
-            {m.films.map((f, i) => (
-              <div
-                key={i}
-                style={{
-                  padding: "10px 13px",
-                  background: f.type === "núcleo" ? "#101010" : "#0a0a0a",
-                  border: `1px solid ${f.type === "núcleo" ? colors.soft : "#141414"}`,
-                  borderLeft: `3px solid ${f.type === "núcleo" ? colors.accent : "#252525"}`,
-                  borderRadius: 2,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontSize: 16,
-                      marginBottom: 3,
-                      color: f.type === "núcleo" ? "#e0d8c8" : "#706860",
-                    }}
-                  >
-                    <a
-                      href={getLetterboxdSearchUrl(f.title, f.year)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        color: f.type === "núcleo" ? "#e0d8c8" : "#706860",
-                        textDecoration: "none",
-                      }}
-                    >
-                      {f.title}
-                    </a>
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#404040",
-                      fontFamily: "monospace",
-                    }}
-                  >
-                    {f.director} · {f.year}
-                  </div>
-                </div>
-                <span
+            {m.films.map((f, i) => {
+              const filmKey = getFilmKey(f, active, i);
+              const isWatched = !!watchedFilms[filmKey];
+              return (
+                <div
+                  key={i}
                   style={{
-                    fontSize: 10,
-                    letterSpacing: 1.5,
-                    color: f.type === "núcleo" ? colors.accent : "#2a2a2a",
-                    textTransform: "uppercase",
-                    fontFamily: "monospace",
-                    marginTop: 2,
-                    whiteSpace: "nowrap",
-                    marginLeft: 10,
+                    padding: "10px 13px",
+                    background: f.type === "núcleo" ? "#101010" : "#0a0a0a",
+                    border: `1px solid ${f.type === "núcleo" ? colors.soft : "#141414"}`,
+                    borderLeft: `3px solid ${f.type === "núcleo" ? colors.accent : "#252525"}`,
+                    borderRadius: 2,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
                   }}
                 >
-                  {f.type}
-                </span>
-              </div>
-            ))}
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 16,
+                        marginBottom: 3,
+                        color: f.type === "núcleo" ? "#e0d8c8" : "#706860",
+                      }}
+                    >
+                      <a
+                        href={getLetterboxdSearchUrl(f.title, f.year)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: f.type === "núcleo" ? "#e0d8c8" : "#706860",
+                          textDecoration: "none",
+                        }}
+                      >
+                        {f.title}
+                      </a>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#404040",
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      {f.director} · {f.year}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                      gap: 8,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleWatched(filmKey)}
+                      aria-label={
+                        isWatched ? "Desmarcar como visto" : "Marcar como visto"
+                      }
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 4,
+                        border: `1px solid ${
+                          isWatched ? colors.accent : "#333"
+                        }`,
+                        background: isWatched ? colors.bg : "transparent",
+                        color: isWatched ? colors.accent : "#777",
+                        fontSize: 14,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {isWatched ? "✓" : "○"}
+                    </button>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: isWatched ? colors.accent : "#555",
+                        fontFamily: "monospace",
+                        textTransform: "uppercase",
+                        letterSpacing: 1.2,
+                      }}
+                    >
+                      {isWatched ? "VISTO" : f.type}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
