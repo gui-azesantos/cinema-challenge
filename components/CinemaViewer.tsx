@@ -20,8 +20,127 @@ const watchedFilmsStorageKey = "cinema-watchedFilms";
 const getFilmKey = (film: Film, monthIndex: number, filmIndex: number) =>
   `${film.title}::${film.year}::${monthIndex}::${filmIndex}`;
 
+const filmTitleMap: Record<string, string> = {
+  "O Gabinete do Dr. Caligari": "The Cabinet of Dr. Caligari",
+  Metrópolis: "Metropolis",
+  "M – O Vampiro de Düsseldorf": "M",
+  "O Último Homem": "The Last Laugh",
+  "As Mãos de Orlac": "The Hands of Orlac",
+  "A Caixa de Pandora": "Pandora's Box",
+  "O Encouraçado Potemkin": "Battleship Potemkin",
+  "A Greve": "Strike",
+  "O Homem com a Câmera": "Man with a Movie Camera",
+  "A Mãe": "Mother",
+  Outubro: "October",
+  "Ivan, o Terrível – Parte I": "Ivan the Terrible, Part I",
+  "A Terra": "Earth",
+  Entusiasmo: "Enthusiasm",
+  "A Marca da Maldade": "Touch of Evil",
+  "Rio Vermelho": "Red River",
+  "Rastros de Ódio": "The Searchers",
+  "Os Melhores Anos de Nossas Vidas": "The Best Years of Our Lives",
+  "No Desfiladeiro da Morte": "My Darling Clementine",
+  "A Malvada": "All About Eve",
+  "Quanto Mais Quente Melhor": "Some Like It Hot",
+  "O Pecado Mora ao Lado": "The Seven Year Itch",
+  "Pacto de Sangue": "Double Indemnity",
+  "A Mulher do Quadro": "The Woman in the Window",
+  "Os Assassinos": "The Killers",
+  "A Morte Num Beijo": "Kiss of Death",
+  "Aos Olhos do Crime": "The Naked City",
+  "O Estranho": "The Stranger",
+  "Roma, Cidade Aberta": "Rome, Open City",
+  "Arroz Amargo": "Bitter Rice",
+  "Milagre em Milão": "Miracle in Milan",
+  "Viagem a Tóquio": "Tokyo Story",
+  "Os Sete Samurais": "Seven Samurai",
+  "Contos da Lua Vaga": "Tales of the Night",
+  "Primavera Tardia": "Late Spring",
+  "O Fim do Verão": "Late Summer",
+  "Mulher na Neblina": "Woman in the Dunes",
+  "Intriga Internacional": "North by Northwest",
+  "A Sombra de uma Dúvida": "Shadow of a Doubt",
+  "Juventude Transviada": "The Wild One",
+  "Os Pássaros": "The Birds",
+  "Tudo que o Céu Permite": "All That Heaven Allows",
+  "Um Americano em Paris": "An American in Paris",
+  "A Noite Americana": "Day for Night",
+  "A Colecionadora": "The Collector",
+  "Paris Pertence a Nós": "Paris Belongs to Us",
+  "Uma Mulher é uma Mulher": "A Woman Is a Woman",
+  "Contos Cruéis da Juventude": "Cruel Tales of Youth",
+  "A Mulher dos Dunas": "Woman in the Dunes",
+  "Morte por Enforcamento": "Death by Hanging",
+  "Violência às 11h": "Violence at Noon",
+  "O Porco e o Couraçado": "The Pig and the Battleship",
+  "O Desprezo": "Contempt",
+  "O Amor é Mais Frio que a Morte": "Love Is Colder Than Death",
+  "Aguirre, a Cólera de Deus": "Aguirre, the Wrath of God",
+  "No Decurso do Tempo": "In the Course of Time",
+  "O Tambor": "The Tin Drum",
+  "O Casamento de Maria Braun": "The Marriage of Maria Braun",
+  "A Chinesa": "La Chinoise",
+  "Um Filme Como os Outros": "A Film Like Any Other",
+  "Número Dois": "Number Two",
+  "A Conversação": "The Conversation",
+  "Touro Indomável": "Raging Bull",
+  "O Franco-Atirador": "The Deer Hunter",
+  Sabotador: "Saboteur",
+  "Janela Indiscreta": "Rear Window",
+  "O Homem Errado": "The Wrong Man",
+  "O Caso Paradine": "The Paradine Case",
+  "Sob o Signo de Capricórnio": "Under Capricorn",
+  "Caminhos da Glória": "Paths of Glory",
+  "Dr. Fantástico": "Dr. Strangelove",
+  "2001: Uma Odisseia no Espaço": "2001: A Space Odyssey",
+  "Laranja Mecânica": "A Clockwork Orange",
+  "O Iluminado": "The Shining",
+  "De Olhos Bem Fechados": "Eyes Wide Shut",
+  "O Sétimo Selo": "The Seventh Seal",
+  "Como num Espelho": "Through a Glass Darkly",
+  "O Silêncio": "The Silence",
+  "Cenas de um Casamento": "Scenes from a Marriage",
+  "A Hora do Lobo": "Hour of the Wolf",
+  "A Vergonha": "Shame",
+  "Os Palhaços": "The Clowns",
+  "Casanova de Fellini": "Fellini's Casanova",
+  "A Noite": "The Night",
+  "O Deserto Vermelho": "Red Desert",
+  "O Passageiro": "The Passenger",
+  "A Amiga": "The Girlfriend",
+  "O Grito": "The Cry",
+  "Identificação de uma Mulher": "Identification of a Woman",
+  "Um Cão Andaluz": "Un Chien Andalou",
+  "O Anjo Exterminador": "The Exterminating Angel",
+  "O Charme Discreto da Burguesia": "The Discreet Charm of the Bourgeoisie",
+  "O Fantasma da Liberdade": "The Phantom of Liberty",
+  "Esse Obscuro Objeto do Desejo": "That Obscure Object of Desire",
+  "Um Condenado à Morte Escapou": "A Man Escaped",
+  "O Diário de um Pároco de Aldeia": "Diary of a Country Priest",
+  "O Diabo Provavelmente": "The Devil Probably",
+  "O Dinheiro": "The Money",
+  "Uma Mulher sob Influência": "A Woman Under the Influence",
+  "A Morte de um Burocrata": "Death of a Bureaucrat",
+  "O Assassinato de um Corretor Chinês": "The Killing of a Chinese Bookie",
+  "O Evangelho Segundo Mateus": "The Gospel According to St. Matthew",
+  "O Decamerão": "The Decameron",
+  "As Mil e Uma Noites": "Arabian Nights",
+  "Atirem no Pianista": "Shoot the Piano Player",
+  "Antoine e Colette": "Antoine and Colette",
+  "A Noiva Estava de Preto": "The Bride Wore Black",
+  "O Quarto Verde": "The Green Room",
+  "Beijos Proibidos": "Forbidden Kisses",
+  "Domicílio Conjugal": "My Night at Maud's",
+  "A História de Adèle H.": "The Story of Adele H.",
+  "O Amor em Fuga": "Love in the Afternoon",
+};
+
 function getWikipediaUrl(name: string) {
   return `https://en.wikipedia.org/wiki/${encodeURIComponent(name)}`;
+}
+
+function getFilmLabel(title: string) {
+  return filmTitleMap[title] ?? title;
 }
 
 function getLetterboxdSearchUrl(title: string, year: number) {
@@ -111,6 +230,10 @@ export default function CinemaViewer({ data, ano }: Props) {
         : 0)
     );
   }, 0);
+  const monthWatchedCount = m.films.reduce((sum, film, index) => {
+    return sum + (watchedFilms[getFilmKey(film, active, index)] ? 1 : 0);
+  }, 0);
+  const monthCompleted = monthWatchedCount >= 4;
   const monthExtraStars = m.films.reduce((sum, film, index) => {
     return (
       sum +
@@ -212,7 +335,7 @@ export default function CinemaViewer({ data, ano }: Props) {
             }}
           >
             <a
-              href={getLetterboxdSearchUrl(film.title, film.year)}
+              href={getLetterboxdSearchUrl(getFilmLabel(film.title), film.year)}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -220,7 +343,7 @@ export default function CinemaViewer({ data, ano }: Props) {
                 textDecoration: "none",
               }}
             >
-              {film.title}
+              {getFilmLabel(film.title)}
             </a>
           </div>
           <div
@@ -628,6 +751,11 @@ export default function CinemaViewer({ data, ano }: Props) {
               </span>
               <span>•</span>
               <span>
+                {monthWatchedCount}/4 filmes vistos{" "}
+                {monthCompleted ? "· CONCLUÍDO" : ""}
+              </span>
+              <span>•</span>
+              <span>
                 Extras: {monthExtraStars} estrelinha
                 {monthExtraStars === 1 ? "" : "s"}
               </span>
@@ -735,8 +863,9 @@ export default function CinemaViewer({ data, ano }: Props) {
             }}
           >
             {monthCoreWatched}/{monthCoreCount} núcleos concluídos ·{" "}
-            {yearCoreWatched}/{yearCoreCount} no ano · Estrelas extras:{" "}
-            {yearExtraStars}
+            {monthWatchedCount}/4 filmes vistos{" "}
+            {monthCompleted ? "· CONCLUÍDO" : ""} · {yearCoreWatched}/
+            {yearCoreCount} no ano · Estrelas extras: {yearExtraStars}
           </div>
         </div>
 
@@ -875,7 +1004,7 @@ export default function CinemaViewer({ data, ano }: Props) {
                       >
                         {j === 0 ? "Sex" : "Dom"}
                       </span>
-                      {film}
+                      {getFilmLabel(film)}
                     </div>
                   ))}
                 </div>
