@@ -15,6 +15,8 @@ type YearStats = {
   coreCount: number;
   coreWatched: number;
   extraStars: number;
+  completedMonthsCount: number;
+  totalMonths: number;
   lastMonth: number | null;
   lastTab: string;
 };
@@ -32,12 +34,7 @@ export default function Home() {
   const [selectedAno, setSelectedAno] = useState<1 | 2>(1);
   const [stats, setStats] = useState<YearStats[]>([]);
 
-  useEffect(() => {
-    const savedAno = window.localStorage.getItem("cinema-lastAno");
-    const savedYear =
-      savedAno === "1" || savedAno === "2" ? Number(savedAno) : 1;
-    setSelectedAno(savedYear as 1 | 2);
-
+  const recomputeStats = () => {
     const savedFilms = window.localStorage.getItem(watchedFilmsStorageKey);
     let watchedFilms: Record<string, boolean> = {};
     if (savedFilms) {
@@ -45,6 +42,18 @@ export default function Home() {
         watchedFilms = JSON.parse(savedFilms);
       } catch {
         watchedFilms = {};
+      }
+    }
+
+    const savedCompletedMonths = window.localStorage.getItem(
+      "cinema-completedMonths",
+    );
+    let completedMonths: Record<string, boolean> = {};
+    if (savedCompletedMonths) {
+      try {
+        completedMonths = JSON.parse(savedCompletedMonths);
+      } catch {
+        completedMonths = {};
       }
     }
 
@@ -85,6 +94,13 @@ export default function Home() {
       const savedMonth = window.localStorage.getItem(activeStorageKey(ano));
       const lastMonth = savedMonth !== null ? Number(savedMonth) : null;
       const savedTab = window.localStorage.getItem(tabStorageKey);
+
+      // Calculate completed months
+      const completedMonthsCount = data.reduce((sum, month, monthIndex) => {
+        const key = `${ano}::${monthIndex}`;
+        return sum + (completedMonths[key] ? 1 : 0);
+      }, 0);
+
       return {
         ano,
         title: `Ano ${ano}`,
@@ -92,6 +108,8 @@ export default function Home() {
         coreCount,
         coreWatched,
         extraStars,
+        completedMonthsCount,
+        totalMonths: data.length,
         lastMonth: Number.isNaN(lastMonth) ? null : lastMonth,
         lastTab:
           savedTab === "filmes" || savedTab === "semanas" || savedTab === "arco"
@@ -101,8 +119,34 @@ export default function Home() {
     };
 
     setStats([buildStats(ano1, 1), buildStats(ano2, 2)]);
+  };
+
+  useEffect(() => {
+    const savedAno = window.localStorage.getItem("cinema-lastAno");
+    const savedYear =
+      savedAno === "1" || savedAno === "2" ? Number(savedAno) : 1;
+    setSelectedAno(savedYear as 1 | 2);
+
+    recomputeStats();
     setReady(true);
+
+    // Recompute stats when window regains focus
+    const handleFocus = () => {
+      recomputeStats();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
   }, []);
+
+  // Recompute stats whenever returning to home view
+  useEffect(() => {
+    if (view === "home") {
+      recomputeStats();
+    }
+  }, [view]);
 
   if (!ready) {
     return (
@@ -220,7 +264,7 @@ export default function Home() {
                   )
                 : "Nunca acessado";
             const progress = Math.round(
-              (card.coreWatched / card.coreCount) * 100,
+              (card.completedMonthsCount / card.totalMonths) * 100,
             );
             return (
               <div

@@ -16,6 +16,10 @@ const activeStorageKey = (ano: 1 | 2) => `cinema-lastActive-ano${ano}`;
 const tabStorageKey = "cinema-lastTab";
 const filterStorageKey = "cinema-filmFilter";
 const watchedFilmsStorageKey = "cinema-watchedFilms";
+const completedMonthsStorageKey = "cinema-completedMonths";
+
+const getCompletedMonthKey = (ano: 1 | 2, monthIndex: number) =>
+  `${ano}::${monthIndex}`;
 
 const getFilmKey = (film: Film, monthIndex: number, filmIndex: number) =>
   `${film.title}::${film.year}::${monthIndex}::${filmIndex}`;
@@ -192,6 +196,18 @@ export default function CinemaViewer({ data, ano }: Props) {
       }
     },
   );
+  const [completedMonths, setCompletedMonths] = useState<
+    Record<string, boolean>
+  >(() => {
+    if (typeof window === "undefined") return {};
+    const saved = window.localStorage.getItem(completedMonthsStorageKey);
+    if (!saved) return {};
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return {};
+    }
+  });
 
   useEffect(() => {
     window.localStorage.setItem(activeStorageKey(ano), String(active));
@@ -211,6 +227,13 @@ export default function CinemaViewer({ data, ano }: Props) {
       JSON.stringify(watchedFilms),
     );
   }, [watchedFilms]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      completedMonthsStorageKey,
+      JSON.stringify(completedMonths),
+    );
+  }, [completedMonths]);
 
   const m = data[active];
   const colors = seasonColors[m.season as Season];
@@ -234,6 +257,8 @@ export default function CinemaViewer({ data, ano }: Props) {
     return sum + (watchedFilms[getFilmKey(film, active, index)] ? 1 : 0);
   }, 0);
   const monthCompleted = monthWatchedCount >= 4;
+  const monthMarkedComplete =
+    !!completedMonths[getCompletedMonthKey(ano, active)];
   const monthExtraStars = m.films.reduce((sum, film, index) => {
     return (
       sum +
@@ -274,8 +299,16 @@ export default function CinemaViewer({ data, ano }: Props) {
       }, 0)
     );
   }, 0);
+
+  // Count completed months instead of individual core films
+  const completedMonthsCount = data.reduce((sum, month, monthIndex) => {
+    return (
+      sum + (completedMonths[getCompletedMonthKey(ano, monthIndex)] ? 1 : 0)
+    );
+  }, 0);
+
   const yearExtraStars = totalWatched - yearCoreWatched;
-  const yearProgress = Math.round((yearCoreWatched / yearCoreCount) * 100);
+  const yearProgress = Math.round((completedMonthsCount / data.length) * 100);
   const monthProgress = Math.min(
     100,
     Math.round((monthCoreWatched / monthCoreCount) * 100),
@@ -301,6 +334,14 @@ export default function CinemaViewer({ data, ano }: Props) {
     setWatchedFilms((prev) => ({
       ...prev,
       [filmKey]: !prev[filmKey],
+    }));
+  };
+
+  const toggleCompletedMonth = () => {
+    const key = getCompletedMonthKey(ano, active);
+    setCompletedMonths((prev) => ({
+      ...prev,
+      [key]: !prev[key],
     }));
   };
 
@@ -476,8 +517,8 @@ export default function CinemaViewer({ data, ano }: Props) {
             }}
           >
             <span>
-              Desafio do ano: {yearCoreWatched}/{yearCoreCount} núcleos (
-              {yearProgress}%)
+              Desafio do ano: {completedMonthsCount}/{data.length} meses
+              concluídos ({yearProgress}%)
             </span>
             <span>•</span>
             <span>
@@ -610,9 +651,12 @@ export default function CinemaViewer({ data, ano }: Props) {
                 style={{
                   fontSize: 28,
                   margin: 0,
-                  color: "#f0e8d8",
+                  color: completedMonths[getCompletedMonthKey(ano, active)]
+                    ? "#6a6a6a"
+                    : "#f0e8d8",
                   fontWeight: "normal",
                   letterSpacing: -0.2,
+                  transition: "color 0.2s ease",
                 }}
               >
                 {m.movement}
@@ -620,18 +664,51 @@ export default function CinemaViewer({ data, ano }: Props) {
             </div>
             <div
               style={{
-                background: colors.tag,
-                padding: "4px 11px",
-                borderRadius: 2,
-                fontSize: 13,
-                color: colors.accent,
-                fontFamily: "monospace",
-                letterSpacing: 2,
-                whiteSpace: "nowrap",
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
               }}
             >
-              {m.month.toUpperCase()} &apos;{m.year.slice(2)} · {m.films.length}{" "}
-              FILMES
+              <button
+                onClick={toggleCompletedMonth}
+                aria-label="Marcar mês como concluído"
+                style={{
+                  background: completedMonths[getCompletedMonthKey(ano, active)]
+                    ? colors.accent
+                    : "transparent",
+                  border: `2px solid ${colors.accent}`,
+                  padding: "6px 12px",
+                  borderRadius: 3,
+                  fontSize: 12,
+                  fontFamily: "monospace",
+                  letterSpacing: 1.5,
+                  color: completedMonths[getCompletedMonthKey(ano, active)]
+                    ? colors.bg
+                    : colors.accent,
+                  cursor: "pointer",
+                  fontWeight: "500",
+                  transition: "all 0.2s ease",
+                  textTransform: "uppercase",
+                }}
+              >
+                {completedMonths[getCompletedMonthKey(ano, active)] ? "✓" : "○"}{" "}
+                CONCLUÍDO
+              </button>
+              <div
+                style={{
+                  background: colors.tag,
+                  padding: "4px 11px",
+                  borderRadius: 2,
+                  fontSize: 13,
+                  color: colors.accent,
+                  fontFamily: "monospace",
+                  letterSpacing: 2,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {m.month.toUpperCase()} &apos;{m.year.slice(2)} ·{" "}
+                {m.films.length} FILMES
+              </div>
             </div>
           </div>
 
@@ -864,8 +941,8 @@ export default function CinemaViewer({ data, ano }: Props) {
           >
             {monthCoreWatched}/{monthCoreCount} núcleos concluídos ·{" "}
             {monthWatchedCount}/4 filmes vistos{" "}
-            {monthCompleted ? "· CONCLUÍDO" : ""} · {yearCoreWatched}/
-            {yearCoreCount} no ano · Estrelas extras: {yearExtraStars}
+            {monthCompleted ? "· CONCLUÍDO" : ""} · {completedMonthsCount}/
+            {data.length} meses no ano · Estrelas extras: {yearExtraStars}
           </div>
         </div>
 
