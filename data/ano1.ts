@@ -130,11 +130,11 @@ const ano1: Month[] = [
     films: [
       {
         title: "O Encouraçado Potemkin",
-        director: "Eisenstein",
+        director: "Sergei Eisenstein",
         year: 1925,
         type: "núcleo",
       },
-      { title: "A Greve", director: "Eisenstein", year: 1925, type: "núcleo" },
+      { title: "A Greve", director: "Sergei Eisenstein", year: 1925, type: "núcleo" },
       {
         title: "O Homem com a Câmera",
         director: "Dziga Vertov",
@@ -149,25 +149,25 @@ const ano1: Month[] = [
       },
       {
         title: "Outubro",
-        director: "Eisenstein",
+        director: "Sergei Eisenstein",
         year: 1928,
         type: "complementar",
       },
       {
         title: "Ivan, o Terrível – Parte I",
-        director: "Eisenstein",
+        director: "Sergei Eisenstein",
         year: 1944,
         type: "complementar",
       },
       {
         title: "A Terra",
-        director: "Dovzhenko",
+        director: "Alexander Dovzhenko",
         year: 1930,
         type: "complementar",
       },
       {
         title: "Entusiasmo",
-        director: "Vertov",
+        director: "Dziga Vertov",
         year: 1931,
         type: "complementar",
       },
@@ -334,7 +334,7 @@ const ano1: Month[] = [
       {
         title: "Aos Olhos do Crime",
         director: "Fritz Lang",
-        year: 1945,
+        year: 1948,
         type: "complementar",
       },
       {
@@ -455,8 +455,8 @@ const ano1: Month[] = [
       },
     ],
     films: [
-      { title: "Viagem a Tóquio", director: "Ozu", year: 1953, type: "núcleo" },
-      { title: "Ikiru", director: "Kurosawa", year: 1952, type: "núcleo" },
+      { title: "Viagem a Tóquio", director: "Yasujiro Ozu", year: 1953, type: "núcleo" },
+      { title: "Ikiru", director: "Akira Kurosawa", year: 1952, type: "núcleo" },
       {
         title: "Os Sete Samurais",
         director: "Kurosawa",
@@ -716,7 +716,7 @@ const ano1: Month[] = [
       {
         title: "Violência às 11h",
         director: "Nagisa Oshima",
-        year: 1960,
+        year: 1966,
         type: "complementar",
       },
       {
