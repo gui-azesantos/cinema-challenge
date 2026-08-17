@@ -235,6 +235,91 @@ export default function CinemaViewer({ data, ano }: Props) {
     );
   }, [completedMonths]);
 
+  // Migrate persisted watched/completed keys when data order changes.
+  useEffect(() => {
+    try {
+      const migratedFlag = `cinema-migrated-ano${ano}-v1`;
+      if (
+        typeof window === "undefined" ||
+        window.localStorage.getItem(migratedFlag)
+      )
+        return;
+
+      const savedFilms = window.localStorage.getItem(watchedFilmsStorageKey);
+      let parsedSaved: Record<string, boolean> = {};
+      if (savedFilms) {
+        try {
+          parsedSaved = JSON.parse(savedFilms);
+        } catch {
+          parsedSaved = {};
+        }
+      }
+
+      // Build map of canonical title::year -> [newKey,...]
+      const canonicalMap: Record<string, string[]> = {};
+      data.forEach((month, monthIndex) => {
+        month.films.forEach((film, filmIndex) => {
+          const canon = `${film.title}::${film.year}`;
+          const newKey = getFilmKey(film, monthIndex, filmIndex);
+          canonicalMap[canon] = canonicalMap[canon] || [];
+          canonicalMap[canon].push(newKey);
+        });
+      });
+
+      const newWatched: Record<string, boolean> = {};
+      // Migrate by matching title and year from old keys like "title::year::oldMonth::oldFilm"
+      Object.keys(parsedSaved).forEach((oldKey) => {
+        if (!parsedSaved[oldKey]) return;
+        const parts = oldKey.split("::");
+        if (parts.length < 2) return;
+        const canon = `${parts[0]}::${parts[1]}`;
+        const candidates = canonicalMap[canon];
+        if (candidates && candidates.length > 0) {
+          // mark the first matching film as watched
+          newWatched[candidates[0]] = true;
+        }
+      });
+
+      // Also preserve any already correctly keyed watched flags
+      Object.keys(parsedSaved).forEach((k) => {
+        if (parsedSaved[k]) newWatched[k] = true;
+      });
+
+      window.localStorage.setItem(
+        watchedFilmsStorageKey,
+        JSON.stringify(newWatched),
+      );
+
+      // Recompute completed months from migrated watched films
+      const migratedCompleted: Record<string, boolean> = {};
+      data.forEach((month, monthIndex) => {
+        const coreCount = month.films.filter((f) => f.type === "núcleo").length;
+        const coreWatched = month.films.reduce((sum, film, filmIndex) => {
+          return (
+            sum + (newWatched[getFilmKey(film, monthIndex, filmIndex)] ? 1 : 0)
+          );
+        }, 0);
+        // Use same threshold as UI (>=4) to mark completed
+        if (coreWatched >= 4) {
+          migratedCompleted[getCompletedMonthKey(ano, monthIndex)] = true;
+        }
+      });
+      window.localStorage.setItem(
+        completedMonthsStorageKey,
+        JSON.stringify(migratedCompleted),
+      );
+
+      window.localStorage.setItem(migratedFlag, "1");
+      // update local state to reflect migrated data
+      setWatchedFilms(newWatched);
+      setCompletedMonths(migratedCompleted);
+    } catch (e) {
+      // fail silently
+    }
+    // run once per ano/data
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const m = data[active];
   const colors = seasonColors[m.season as Season];
   const totalFilmes = data.reduce((a, d) => a + d.films.length, 0);
