@@ -448,7 +448,7 @@ export default function CinemaViewer({ data, ano }: Props) {
     ? `${totalFilmes} filmes · ${data.length} meses · ${data.length} movimentos · ordem cronológica`
     : `${totalFilmes} filmes · ${data.length} meses · 12 diretores · por autor`;
 
-  const dateRange = isAno1 ? "Mai 2026 → Jul 2027" : "Ago 2027 → Jul 2028";
+  const dateRange = isAno1 ? "Ago 2026 → Set 2027" : "Ago 2027 → Jul 2028";
   const label = isAno1 ? "MOVIMENTOS HISTÓRICOS" : "ESTUDO POR DIRETOR";
 
   return (
