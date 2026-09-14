@@ -108,12 +108,13 @@ const ano1: Month[] = [
     movement: "Cinema Japonês Clássico",
     period: "1948–1965",
     context:
-      "Kurosawa e Ozu são antípodas: um épico dinâmico, outro contemplativo e minimalista. Mizoguchi completa o trio com sua câmera flutuante e retratos intensos de personagens femininas.",
+      "Ozu e Kurosawa definem o eixo clássico, mas o grupo se amplia com Mizoguchi, Naruse e Teshigahara para mostrar como o cinema japonês atravessa família, mortalidade, honra e modernidade sem perder sua intensidade emocional.",
     directors: [
       "Akira Kurosawa",
       "Yasujiro Ozu",
       "Kenji Mizoguchi",
       "Mikio Naruse",
+      "Hiroshi Teshigahara",
     ],
     refs: [
       {
@@ -145,21 +146,21 @@ const ano1: Month[] = [
         type: "núcleo",
       },
       {
-        title: "Contos da Lua Vaga",
-        director: "Mizoguchi",
+        title: "Primavera Tardia",
+        director: "Ozu",
+        year: 1949,
+        type: "núcleo",
+      },
+      {
+        title: "Ugetsu",
+        director: "Kenji Mizoguchi",
         year: 1953,
         type: "núcleo",
       },
       {
-        title: "Primavera Tardia",
-        director: "Ozu",
-        year: 1949,
-        type: "complementar",
-      },
-      {
-        title: "O Fim do Verão",
-        director: "Ozu",
-        year: 1961,
+        title: "Nuvens Flutuantes",
+        director: "Mikio Naruse",
+        year: 1955,
         type: "complementar",
       },
       {
@@ -169,17 +170,17 @@ const ano1: Month[] = [
         type: "complementar",
       },
       {
-        title: "Mulher na Neblina",
-        director: "Naruse",
-        year: 1960,
+        title: "A Mulher dos Dunas",
+        director: "Hiroshi Teshigahara",
+        year: 1964,
         type: "complementar",
       },
     ],
     weeks: [
       ["Viagem a Tóquio", "Ikiru"],
-      ["Os Sete Samurais", "Contos da Lua Vaga"],
-      ["Primavera Tardia", "O Fim do Verão"],
-      ["Yojimbo", "Mulher na Neblina"],
+      ["Os Sete Samurais", "Primavera Tardia"],
+      ["Ugetsu", "Nuvens Flutuantes"],
+      ["Yojimbo", "A Mulher dos Dunas"],
     ],
     connection: "→ Outubro '26: Teoria dos Autores (Cahiers du Cinéma).",
   },

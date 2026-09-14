@@ -252,17 +252,13 @@ export default function Home() {
           }}
         >
           {stats.map((card) => {
-            const monthLabelText =
-              card.lastMonth !== null
-                ? monthLabel(
-                    card.ano === 1
-                      ? ano1[card.lastMonth].month
-                      : ano2[card.lastMonth].month,
-                    card.ano === 1
-                      ? ano1[card.lastMonth].year
-                      : ano2[card.lastMonth].year,
-                  )
-                : "Nunca acessado";
+            const monthLabelText = (() => {
+              if (card.lastMonth === null) return "Nunca acessado";
+              const idx = card.lastMonth;
+              const dataArray = card.ano === 1 ? ano1 : ano2;
+              if (idx < 0 || idx >= dataArray.length) return "Nunca acessado";
+              return monthLabel(dataArray[idx].month, dataArray[idx].year);
+            })();
             const progress = Math.round(
               (card.completedMonthsCount / card.totalMonths) * 100,
             );
